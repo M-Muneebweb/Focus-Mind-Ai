@@ -1,9 +1,9 @@
-import fs from "fs";
-import path from "path";
+import fs from "node:fs";
+import path from "node:path";
 import express from "express";
 import cors from "cors";
 
-// Minimal imports at top level to avoid crashes
+// No top-level side effects for Vercel compatibility
 export async function createApp() {
   const app = express();
 
@@ -257,7 +257,8 @@ export async function createApp() {
       const callGemini = async (apiKey: string) => {
         const { GoogleGenAI } = await import("@google/genai");
         const ai = new GoogleGenAI({ apiKey });
-        const model = ai.getGenerativeModel({ model: "gemini-2.0-flash" });
+        // Use any to bypass linting issues with the @google/genai package structure
+        const model = (ai as any).getGenerativeModel({ model: "gemini-2.0-flash" });
         const result = await model.generateContent({
           contents: [{ role: 'user', parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }] }],
           generationConfig: { temperature: 0.2, responseMimeType: jsonMode ? "application/json" : "text/plain" }
@@ -410,15 +411,15 @@ export async function createApp() {
   return app;
 }
 
-// Only start the server if this file is run directly (local development)
-const isMainModule = import.meta.url === `file://${path.resolve(process.argv[1])}`;
-if (isMainModule && (!process.env.VERCEL)) {
+// Start server ONLY if run directly via tsx/node AND not on Vercel
+const isLocalDev = process.env.NODE_ENV !== 'production' && !process.env.VERCEL;
+if (isLocalDev) {
   createApp().then(app => {
     const PORT = process.env.PORT || 3000;
     app.listen(PORT, () => {
-      console.log(`Server running on http://localhost:${PORT}`);
+      console.log(`[Local Server] Running at http://localhost:${PORT}`);
     });
   }).catch(err => {
-    console.error("Failed to start local server:", err);
+    console.error("[Local Server] CRITICAL ERROR:", err);
   });
 }
