@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://focus-mind-ai-self.vercel.app/sitemap.xml
